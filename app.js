@@ -35,8 +35,8 @@
       zipErr: "Не удалось создать ZIP.",
     },
     en: {
-      title: "AI Texture Collection",
-      subtitle: "Browse, categorize, and download your AI-generated textures",
+      title: "AI PBR Textures",
+      subtitle: "I create these textures exclusively with artificial intelligence. They are free to use, and this library will keep evolving with new AI-made material packs.",
       hint: "Auto-load from repository: textures/category/texture/files. Every texture folder becomes one card and one ZIP.",
       search: "Search: oak, wood, metal...",
       idle: "Loading textures from repository...",
@@ -63,9 +63,8 @@
     filtered: [],
     categories: [],
     category: "all",
-    query: "",
     page: 1,
-    lang: localStorage.getItem("texture-lang") || "ru",
+    lang: "en",
     theme: localStorage.getItem("texture-theme") || "dark",
     modal: { open: false, index: -1, file: 0, zoom: 1, seamless: false },
   };
@@ -74,10 +73,6 @@
     title: document.getElementById("title"),
     subtitle: document.getElementById("subtitle"),
     themeBtn: document.getElementById("themeBtn"),
-    langBtn: document.getElementById("langBtn"),
-    deployHint: document.getElementById("deployHint"),
-    searchInput: document.getElementById("searchInput"),
-    searchLabel: document.getElementById("searchLabel"),
     categories: document.getElementById("categories"),
     statusText: document.getElementById("statusText"),
     countText: document.getElementById("countText"),
@@ -244,12 +239,9 @@
   }
 
   function filterItems() {
-    const q = norm(state.query);
     state.filtered = state.items.filter(tx => {
       if (state.category !== "all" && norm(tx.category) !== state.category) return false;
-      if (!q) return true;
-      const hay = `${tx.name} ${tx.category} ${tx.files.map(f => f.type).join(" ")}`.toLowerCase();
-      return hay.includes(q);
+      return true;
     });
     const maxPage = Math.max(1, Math.ceil(state.filtered.length / PAGE_SIZE));
     state.page = Math.min(state.page, maxPage);
@@ -447,15 +439,10 @@
     document.title = L.title;
     el.title.textContent = L.title;
     el.subtitle.textContent = L.subtitle;
-    el.deployHint.textContent = L.hint;
-    el.searchInput.placeholder = L.search;
-    el.searchLabel.textContent = L.search;
     el.closeModal.textContent = L.close;
     el.seamBtn.textContent = L.seamless;
-    el.langBtn.textContent = state.lang === "ru" ? "EN" : "RU";
     el.empty.textContent = L.empty;
     if (!state.items.length) { setStatus(L.idle); setCount(0); }
-    localStorage.setItem("texture-lang", state.lang);
   }
 
   function bindEvents() {
@@ -463,19 +450,6 @@
       state.theme = state.theme === "dark" ? "light" : "dark";
       applyTheme();
     });
-
-    el.langBtn.addEventListener("click", () => {
-      state.lang = state.lang === "ru" ? "en" : "ru";
-      applyLang();
-      updateCategories();
-      render();
-    });
-
-    el.searchInput.addEventListener("input", debounce(e => {
-      state.query = e.target.value;
-      state.page = 1;
-      filterItems();
-    }));
 
     el.categories.addEventListener("click", e => {
       const b = e.target.closest("button[data-key]");
