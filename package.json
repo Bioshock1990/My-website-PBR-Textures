@@ -1,0 +1,11 @@
+﻿{
+  "name": "ai-pbr-textures-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:texture-index": "node scripts/generate-texture-index.mjs"
+  },
+  "devDependencies": {
+    "sharp": "^0.34.4"
+  }
+}

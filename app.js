@@ -175,10 +175,47 @@
     throw new Error("tree");
   }
 
+  function normalizeLoadedItems(list) {
+    return (Array.isArray(list) ? list : []).map(item => ({
+      name: String(item.name || "texture"),
+      category: String(item.category || t("unc")),
+      preview: item.preview ? String(item.preview) : "",
+      files: (Array.isArray(item.files) ? item.files : []).map(f => ({
+        name: String(f.name || ""),
+        type: String(f.type || mapType(String(f.name || ""))),
+        src: String(f.src || f.url || ""),
+        relInTexture: String(f.relInTexture || f.name || ""),
+      })).filter(f => f.src),
+    })).filter(item => item.files.length);
+  }
+
+  async function loadFromIndexJson() {
+    const r = await fetch("textures/index.json", { cache: "no-store" });
+    if (!r.ok) throw new Error("index");
+    const data = await r.json();
+    const items = normalizeLoadedItems(data.items || data.textures || data);
+    if (!items.length) throw new Error("index-empty");
+    return items;
+  }
+
   async function loadFromGitHub() {
     setStatus(t("loading"));
     setProgress(8, true);
     try {
+      try {
+        const indexed = await loadFromIndexJson();
+        state.items = indexed;
+        state.category = "all";
+        state.page = 1;
+        updateCategories();
+        filterItems();
+        setProgress(100, true);
+        setStatus(`${t("ready")}: ${state.items.length}`);
+        return;
+      } catch {
+        // Fallback for first run if index.json is not generated yet.
+      }
+
       const { owner, repo } = detectRepoFromLocation();
       const preferredBranch = await fetchDefaultBranch(owner, repo);
       const { tree, branch } = await fetchTree(owner, repo, preferredBranch);

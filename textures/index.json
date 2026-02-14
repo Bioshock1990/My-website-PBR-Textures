@@ -1,21 +1,29 @@
-﻿{
-  "textures": [
+{
+  "generatedAt": "2026-02-14T03:46:23.077Z",
+  "items": [
     {
-      "name": "oak_planks",
-      "category": "wood",
+      "name": "1",
+      "category": "Metal",
+      "preview": "textures/Metal/1/thumb.webp",
       "files": [
-        { "name": "oak_planks_basecolor.jpg", "type": "basecolor", "url": "textures/wood/oak_planks/oak_planks_basecolor.jpg" },
-        { "name": "oak_planks_normal.jpg", "type": "normal", "url": "textures/wood/oak_planks/oak_planks_normal.jpg" },
-        { "name": "oak_planks_roughness.jpg", "type": "roughness", "url": "textures/wood/oak_planks/oak_planks_roughness.jpg" }
-      ]
-    },
-    {
-      "name": "brushed_steel",
-      "category": "metal",
-      "files": [
-        { "name": "brushed_steel_basecolor.jpg", "type": "basecolor", "url": "textures/metal/brushed_steel/brushed_steel_basecolor.jpg" },
-        { "name": "brushed_steel_normal.jpg", "type": "normal", "url": "textures/metal/brushed_steel/brushed_steel_normal.jpg" },
-        { "name": "brushed_steel_roughness.jpg", "type": "roughness", "url": "textures/metal/brushed_steel/brushed_steel_roughness.jpg" }
+        {
+          "name": "Surface-basecolor.jpg",
+          "type": "basecolor",
+          "src": "textures/Metal/1/Surface-basecolor.jpg",
+          "relInTexture": "Surface-basecolor.jpg"
+        },
+        {
+          "name": "Surface-displacement.jpg",
+          "type": "displacement",
+          "src": "textures/Metal/1/Surface-displacement.jpg",
+          "relInTexture": "Surface-displacement.jpg"
+        },
+        {
+          "name": "Surface-normal.jpg",
+          "type": "normal",
+          "src": "textures/Metal/1/Surface-normal.jpg",
+          "relInTexture": "Surface-normal.jpg"
+        }
       ]
     }
   ]

@@ -1,0 +1,46 @@
+﻿name: Build Texture Index
+
+on:
+  push:
+    paths:
+      - "textures/**"
+      - "scripts/generate-texture-index.mjs"
+      - ".github/workflows/build-texture-index.yml"
+      - "package.json"
+
+permissions:
+  contents: write
+
+jobs:
+  build-index:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Generate thumbs and index
+        run: npm run build:texture-index
+
+      - name: Commit changes
+        run: |
+          if [ -n "$(git status --porcelain textures/index.json textures | grep -E 'textures/.+/thumb.webp|textures/index.json')" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add textures/index.json textures/**/thumb.webp
+            git commit -m "chore: regenerate texture index and previews"
+            git push
+          else
+            echo "No changes to commit"
+          fi
