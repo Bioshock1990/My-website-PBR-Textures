@@ -7,6 +7,7 @@
   <title>Коллекция Текстур от Нейросетей</title>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r158/three.min.js"></script>
   <style>
     :root {
       --bg: #070b12;
@@ -135,7 +136,7 @@
       padding: 11px 14px;
     }
 
-    .cats { display: flex; flex-wrap: wrap; gap: 8px; }
+    .cats { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
     .chip.active {
       background: color-mix(in srgb, var(--accent) 30%, var(--surface));
       border-color: color-mix(in srgb, var(--accent) 75%, var(--border));
@@ -308,6 +309,19 @@
 
     .seamless[data-on="1"] { display: block; }
 
+    .sphere-view {
+      width: min(920px, 94%);
+      height: min(68vh, 620px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      display: none;
+      overflow: hidden;
+      background: radial-gradient(circle at 30% 25%, #223a54, #0e1a2a);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    .sphere-view[data-on="1"] { display: block; }
+
     .modal-btn { border-radius: 10px; padding: 8px 11px; }
     .modal-btn.active {
       background: color-mix(in srgb, var(--accent) 30%, var(--surface));
@@ -323,6 +337,7 @@
       .thumbs { flex-direction: row; border-right: 0; border-bottom: 1px solid var(--border); }
       .viewer img { max-height: 56vh; }
       .seamless { height: min(56vh, 440px); }
+      .sphere-view { height: min(56vh, 440px); }
     }
 
     @media (max-width: 620px) {
@@ -376,6 +391,7 @@
         <div id="viewer" class="viewer">
           <img id="modalImage" alt="Просмотр карты" />
           <div id="seamless" class="seamless" data-on="0" aria-label="Проверка бесшовности"></div>
+          <div id="sphereView" class="sphere-view" data-on="0" aria-label="3D просмотр материала"></div>
         </div>
       </div>
 
@@ -385,6 +401,7 @@
           <button id="prevBtn" class="modal-btn" type="button">◀</button>
           <button id="nextBtn" class="modal-btn" type="button">▶</button>
           <button id="seamBtn" class="modal-btn" type="button">Бесшовность</button>
+          <button id="sphereBtn" class="modal-btn" type="button">3D</button>
           <button id="zoomOut" class="modal-btn" type="button">−</button>
           <button id="zoomIn" class="modal-btn" type="button">＋</button>
           <button id="zoomReset" class="modal-btn" type="button">100%</button>
