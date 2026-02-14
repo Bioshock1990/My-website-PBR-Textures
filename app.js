@@ -30,8 +30,6 @@
       map: "Карта",
       close: "Закрыть",
       seamless: "Бесшовность",
-      sphere: "3D",
-      modeHint: "В обычном режиме зумит изображение. В «Бесшовность» меняет размер тайла. В «3D» меняет дистанцию камеры.",
       zipStart: "Создаю ZIP...",
       zipDone: "ZIP скачан:",
       zipErr: "Не удалось создать ZIP.",
@@ -54,8 +52,6 @@
       map: "Map",
       close: "Close",
       seamless: "Seamless",
-      sphere: "3D",
-      modeHint: "In normal mode zoom scales image. In Seamless mode it changes tile size. In 3D mode it changes camera distance.",
       zipStart: "Creating ZIP...",
       zipDone: "ZIP saved:",
       zipErr: "Failed to create ZIP.",
@@ -71,8 +67,7 @@
     page: 1,
     lang: localStorage.getItem("texture-lang") || "ru",
     theme: localStorage.getItem("texture-theme") || "dark",
-    modal: { open: false, index: -1, file: 0, zoom: 1, view: "image" },
-    sphere3d: { renderer: null, scene: null, camera: null, mesh: null, frame: 0, ready: false },
+    modal: { open: false, index: -1, file: 0, zoom: 1, seamless: false },
   };
 
   const el = {
@@ -98,16 +93,13 @@
     viewer: document.getElementById("viewer"),
     modalImage: document.getElementById("modalImage"),
     seamless: document.getElementById("seamless"),
-    sphereView: document.getElementById("sphereView"),
     mapLabel: document.getElementById("mapLabel"),
     prevBtn: document.getElementById("prevBtn"),
     nextBtn: document.getElementById("nextBtn"),
     seamBtn: document.getElementById("seamBtn"),
-    sphereBtn: document.getElementById("sphereBtn"),
     zoomOut: document.getElementById("zoomOut"),
     zoomIn: document.getElementById("zoomIn"),
     zoomReset: document.getElementById("zoomReset"),
-    modalHint: document.getElementById("modalHint"),
   };
 
   const t = key => i18n[state.lang][key] || key;
@@ -279,10 +271,12 @@
     card.className = "card";
     const src = tx.preview || pickPreview(tx.files)?.src || "";
     card.innerHTML = `
-      <div class="preview-wrap">${src ? `<img class="preview" src="${src}" alt="${tx.name}" loading="lazy" decoding="async" />` : `<div class="placeholder">no preview</div>`}</div>
+      <div class="preview-wrap">
+        <button class="preview-open" type="button" data-action="view" data-index="${absIndex}" aria-label="${t("view")}"></button>
+        ${src ? `<img class="preview" src="${src}" alt="${tx.name}" loading="lazy" decoding="async" />` : `<div class="placeholder">no preview</div>`}
+      </div>
       <div class="card-body">
         <span class="badge">${tx.category || t("unc")}</span>
-        <h3 class="title">${tx.name}</h3>
         <p class="meta">${summary(tx.files)}</p>
         <div class="actions">
           <button class="small" type="button" data-action="view" data-index="${absIndex}">${t("view")}</button>
@@ -367,110 +361,17 @@
     setStatus(`${t("zipDone")} ${folderName}.zip`);
   }
 
-  function ensureSphereRenderer() {
-    if (state.sphere3d.ready || typeof THREE === "undefined") return state.sphere3d.ready;
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(48, 1, 0.1, 100);
-    camera.position.set(0, 0, 2.4);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.65));
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.15);
-    keyLight.position.set(2.2, 1.8, 2.4);
-    scene.add(keyLight);
-    const rim = new THREE.DirectionalLight(0x8ed8ff, 0.45);
-    rim.position.set(-2.1, -1.2, -2.2);
-    scene.add(rim);
-    const geometry = new THREE.SphereGeometry(0.95, 96, 96);
-    const material = new THREE.MeshStandardMaterial({ color: 0xb8c3d2, roughness: 0.7, metalness: 0.2 });
-    const mesh = new THREE.Mesh(geometry, material);
-    scene.add(mesh);
-    el.sphereView.appendChild(renderer.domElement);
-    state.sphere3d = { renderer, scene, camera, mesh, frame: 0, ready: true };
-    return true;
-  }
-
-  function resizeSphereRenderer() {
-    if (!state.sphere3d.ready) return;
-    const rect = el.sphereView.getBoundingClientRect();
-    const width = Math.max(10, Math.floor(rect.width));
-    const height = Math.max(10, Math.floor(rect.height));
-    state.sphere3d.renderer.setSize(width, height, false);
-    state.sphere3d.camera.aspect = width / height;
-    state.sphere3d.camera.updateProjectionMatrix();
-  }
-
-  function set3DMaterial(tx) {
-    if (!state.sphere3d.ready || !tx) return;
-    const loader = new THREE.TextureLoader();
-    const maps = {
-      map: tx.files.find(f => f.type === "basecolor") || null,
-      normalMap: tx.files.find(f => f.type === "normal") || null,
-      roughnessMap: tx.files.find(f => f.type === "roughness") || null,
-      metalnessMap: tx.files.find(f => f.type === "metalness") || null,
-      aoMap: tx.files.find(f => f.type === "ao") || null,
-      displacementMap: tx.files.find(f => f.type === "displacement") || null,
-    };
-    const material = state.sphere3d.mesh.material;
-    Object.entries(maps).forEach(([slot, file]) => {
-      if (material[slot]) material[slot].dispose();
-      material[slot] = null;
-      if (file) {
-        const texture = loader.load(file.src);
-        texture.wrapS = THREE.RepeatWrapping;
-        texture.wrapT = THREE.RepeatWrapping;
-        texture.anisotropy = 4;
-        material[slot] = texture;
-      }
-    });
-    material.displacementScale = maps.displacementMap ? 0.05 : 0;
-    material.roughness = maps.roughnessMap ? 1 : 0.65;
-    material.metalness = maps.metalnessMap ? 1 : 0.18;
-    material.needsUpdate = true;
-  }
-
-  function startSphereLoop() {
-    if (!state.sphere3d.ready || state.sphere3d.frame) return;
-    const tick = () => {
-      if (state.modal.view !== "sphere" || !state.modal.open) {
-        state.sphere3d.frame = 0;
-        return;
-      }
-      state.sphere3d.mesh.rotation.y += 0.006;
-      state.sphere3d.renderer.render(state.sphere3d.scene, state.sphere3d.camera);
-      state.sphere3d.frame = requestAnimationFrame(tick);
-    };
-    state.sphere3d.frame = requestAnimationFrame(tick);
-  }
-
   function updateViewerScale() {
-    if (state.modal.view === "image") {
+    if (!state.modal.seamless) {
       el.modalImage.style.display = "block";
       el.seamless.dataset.on = "0";
-      el.sphereView.dataset.on = "0";
       el.modalImage.style.transform = `scale(${state.modal.zoom})`;
       return;
     }
-    if (state.modal.view === "seamless") {
-      el.modalImage.style.display = "none";
-      el.seamless.dataset.on = "1";
-      el.sphereView.dataset.on = "0";
-      const tile = Math.max(16, Math.min(1024, Math.round(256 * state.modal.zoom)));
-      el.seamless.style.backgroundSize = `${tile}px ${tile}px`;
-      return;
-    }
     el.modalImage.style.display = "none";
-    el.seamless.dataset.on = "0";
-    el.sphereView.dataset.on = "1";
-    if (ensureSphereRenderer()) {
-      resizeSphereRenderer();
-      state.sphere3d.camera.position.z = Math.max(1.4, Math.min(5.2, 2.4 / Math.max(0.2, state.modal.zoom)));
-      startSphereLoop();
-    } else {
-      state.modal.view = "image";
-      el.sphereBtn.classList.remove("active");
-      updateViewerScale();
-    }
+    el.seamless.dataset.on = "1";
+    const tile = Math.max(16, Math.min(1024, Math.round(256 * state.modal.zoom)));
+    el.seamless.style.backgroundSize = `${tile}px ${tile}px`;
   }
 
   function openModal(index, fileIndex = 0) {
@@ -480,7 +381,7 @@
     state.modal.index = index;
     state.modal.file = Math.max(0, Math.min(fileIndex, tx.files.length - 1));
     state.modal.zoom = 1;
-    state.modal.view = "image";
+    state.modal.seamless = false;
     el.modal.dataset.open = "1";
     el.modal.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
@@ -492,10 +393,6 @@
     el.modal.dataset.open = "0";
     el.modal.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
-    if (state.sphere3d.frame) {
-      cancelAnimationFrame(state.sphere3d.frame);
-      state.sphere3d.frame = 0;
-    }
   }
 
   function renderModal() {
@@ -510,8 +407,7 @@
     el.modalImage.alt = `${tx.name} ${f.type}`;
     el.mapLabel.textContent = `${t("map")}: ${f.type} (${state.modal.file + 1}/${tx.files.length})`;
     el.seamless.style.backgroundImage = `url("${f.src}")`;
-    el.seamBtn.classList.toggle("active", state.modal.view === "seamless");
-    el.sphereBtn.classList.toggle("active", state.modal.view === "sphere");
+    el.seamBtn.classList.toggle("active", state.modal.seamless);
 
     el.thumbs.innerHTML = "";
     tx.files.forEach((file, i) => {
@@ -523,7 +419,6 @@
       el.thumbs.appendChild(b);
     });
 
-    if (state.modal.view === "sphere") set3DMaterial(tx);
     updateViewerScale();
   }
 
@@ -557,8 +452,6 @@
     el.searchLabel.textContent = L.search;
     el.closeModal.textContent = L.close;
     el.seamBtn.textContent = L.seamless;
-    el.sphereBtn.textContent = L.sphere;
-    el.modalHint.textContent = L.modeHint;
     el.langBtn.textContent = state.lang === "ru" ? "EN" : "RU";
     el.empty.textContent = L.empty;
     if (!state.items.length) { setStatus(L.idle); setCount(0); }
@@ -615,24 +508,9 @@
     el.prevBtn.addEventListener("click", () => modalStep(-1));
     el.nextBtn.addEventListener("click", () => modalStep(1));
     el.seamBtn.addEventListener("click", () => {
-      state.modal.view = state.modal.view === "seamless" ? "image" : "seamless";
+      state.modal.seamless = !state.modal.seamless;
       updateViewerScale();
-      el.seamBtn.classList.toggle("active", state.modal.view === "seamless");
-      el.sphereBtn.classList.toggle("active", state.modal.view === "sphere");
-    });
-    el.sphereBtn.addEventListener("click", () => {
-      if (state.modal.view === "sphere") {
-        state.modal.view = "image";
-      } else {
-        state.modal.view = ensureSphereRenderer() ? "sphere" : "image";
-        if (state.modal.view === "sphere") {
-          const tx = state.filtered[state.modal.index];
-          set3DMaterial(tx);
-        }
-      }
-      updateViewerScale();
-      el.seamBtn.classList.toggle("active", state.modal.view === "seamless");
-      el.sphereBtn.classList.toggle("active", state.modal.view === "sphere");
+      el.seamBtn.classList.toggle("active", state.modal.seamless);
     });
     el.zoomIn.addEventListener("click", () => setZoom(state.modal.zoom + 0.2));
     el.zoomOut.addEventListener("click", () => setZoom(state.modal.zoom - 0.2));
@@ -653,7 +531,6 @@
     }, { passive: false });
 
     el.modal.addEventListener("click", e => { if (e.target === el.modal) closeModal(); });
-    window.addEventListener("resize", () => { if (state.modal.view === "sphere") resizeSphereRenderer(); });
 
     window.addEventListener("keydown", e => {
       if (!state.modal.open) return;
