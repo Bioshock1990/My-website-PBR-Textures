@@ -99,6 +99,10 @@
 
   const t = key => i18n[state.lang][key] || key;
   const norm = value => String(value || "").trim().toLowerCase();
+  const isPreviewFile = name => {
+    const n = norm(name);
+    return n === "thumb.webp" || n === "thumb.jpg" || n === "thumb.jpeg" || n === "preview.webp" || n === "preview.jpg" || n === "preview.jpeg";
+  };
   const debounce = (fn, ms = 220) => { let timer; return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); }; };
   const isImage = p => IMAGE_EXT.includes(norm(p.split(".").pop()));
 
@@ -185,7 +189,7 @@
         type: String(f.type || mapType(String(f.name || ""))),
         src: String(f.src || f.url || ""),
         relInTexture: String(f.relInTexture || f.name || ""),
-      })).filter(f => f.src),
+      })).filter(f => f.src && !isPreviewFile(f.name)),
     })).filter(item => item.files.length);
   }
 
@@ -228,6 +232,7 @@
         const parts = file.path.split("/");
         if (parts.length < 3) continue;
         if (!ROOT_CANDIDATES.includes(parts[0])) continue;
+        if (isPreviewFile(parts[parts.length - 1])) continue;
 
         const category = parts[1] || t("unc");
         const texture = parts[2] || (parts[parts.length - 1].split("_")[0] || "texture");
