@@ -1,0 +1,22 @@
+﻿{
+  "textures": [
+    {
+      "name": "oak_planks",
+      "category": "wood",
+      "files": [
+        { "name": "oak_planks_basecolor.jpg", "type": "basecolor", "url": "textures/wood/oak_planks/oak_planks_basecolor.jpg" },
+        { "name": "oak_planks_normal.jpg", "type": "normal", "url": "textures/wood/oak_planks/oak_planks_normal.jpg" },
+        { "name": "oak_planks_roughness.jpg", "type": "roughness", "url": "textures/wood/oak_planks/oak_planks_roughness.jpg" }
+      ]
+    },
+    {
+      "name": "brushed_steel",
+      "category": "metal",
+      "files": [
+        { "name": "brushed_steel_basecolor.jpg", "type": "basecolor", "url": "textures/metal/brushed_steel/brushed_steel_basecolor.jpg" },
+        { "name": "brushed_steel_normal.jpg", "type": "normal", "url": "textures/metal/brushed_steel/brushed_steel_normal.jpg" },
+        { "name": "brushed_steel_roughness.jpg", "type": "roughness", "url": "textures/metal/brushed_steel/brushed_steel_roughness.jpg" }
+      ]
+    }
+  ]
+}
